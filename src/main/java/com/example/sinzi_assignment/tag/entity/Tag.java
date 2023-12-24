@@ -31,12 +31,13 @@ public class Tag {
     @Column(name = "TAG")
     private String tag;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "BOARD_CD", referencedColumnName  = "BOARD_CD", insertable = false, updatable = false,
-            foreignKey = @ForeignKey(name = "fk_tag_of_board_cd"))
-    private BoardDef boardDef;
+//    @ManyToOne(fetch = FetchType.LAZY)
+//    @JoinColumn(name = "BOARD_CD", referencedColumnName  = "BOARD_CD",
+//            foreignKey = @ForeignKey(name = "fk_tag_of_board_cd"))
+//    private BoardDef boardDef;
 
     @OneToMany(mappedBy = "tag", cascade = CascadeType.ALL, orphanRemoval = true)
+    //CascadeType.ALL때문에 어느 한쪽의 엔티티가 저장되면 다른 쪽도 자동을 저장되기 때문에 빌더를 사용해서 값을 넣을 필요가 없다
     private List<PostTag> postTags = new ArrayList<>();
 
     public void addPost(final Post post) {
@@ -45,10 +46,9 @@ public class Tag {
         post.getPostTags().add(postTag);
     }
     @Builder
-    public Tag(String board_cd, String tag, BoardDef boardDef, List<PostTag> postTags) {
+    public Tag(final String board_cd, final String tag, final List<PostTag> postTags) {
         this.boardCd = board_cd;
         this.tag = tag;
-        this.boardDef = boardDef;
-        this.postTags = postTags;
+        this.postTags = (postTags != null) ? postTags : new ArrayList<>();
     }
 }

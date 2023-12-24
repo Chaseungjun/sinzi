@@ -1,7 +1,6 @@
 package com.example.sinzi_assignment.post.service.command;
 
 import com.example.sinzi_assignment.post.entity.Post;
-import com.example.sinzi_assignment.post.entity.PostId;
 import com.example.sinzi_assignment.post.repository.PostRepository;
 import com.example.sinzi_assignment.tag.entity.Tag;
 import lombok.RequiredArgsConstructor;

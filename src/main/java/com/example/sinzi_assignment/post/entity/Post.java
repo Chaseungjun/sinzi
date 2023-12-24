@@ -1,6 +1,5 @@
 package com.example.sinzi_assignment.post.entity;
 
-import com.example.sinzi_assignment.boardDef.entity.BoardDef;
 import com.example.sinzi_assignment.postTag.entity.PostTag;
 import com.example.sinzi_assignment.tag.entity.Tag;
 import jakarta.persistence.*;
@@ -10,7 +9,6 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import org.hibernate.annotations.Comment;
 import org.hibernate.annotations.CreationTimestamp;
-import org.hibernate.annotations.GenericGenerator;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -21,20 +19,15 @@ import java.util.UUID;
 @Getter
 @Table(name = "POST")
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-@IdClass(PostId.class)
 public class Post {
 
-    @Id @Comment("(PK)")
-    @Column(name = "POST_NO")
-    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "board1Seq")
-    @SequenceGenerators({
-            @SequenceGenerator(name = "board1Seq", sequenceName = "board1_sequence", initialValue = 1, allocationSize = 1),
-            @SequenceGenerator(name = "board2Seq", sequenceName = "board2_sequence", initialValue = 1, allocationSize = 1)
-    })
-    private Integer post_no;
-
     @Id
-    @Comment("(PK, FK)")
+    @Comment("(PK)")
+    @Column(name = "POST_NO")
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long post_no;
+
+    @Comment("(FK)")
     @Column(name = "BOARD_CD")
     private String board_cd;
 
@@ -51,16 +44,11 @@ public class Post {
     @CreationTimestamp
     private LocalDateTime reg_dt;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "BOARD_CD", referencedColumnName = "BOARD_CD", insertable = false, updatable = false,
-            foreignKey = @ForeignKey(name = "fk_post_of_board_cd"))
-    private BoardDef boardDef;
-
     @OneToMany(mappedBy = "post", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<PostTag> postTags = new ArrayList<>();
 
     @Builder
-    public Post(String post_sj, String post_cn, String board_cd, List<PostTag> postTagList) {
+    public Post(final String post_sj, final String post_cn, final String board_cd, final List<PostTag> postTagList) {
         this.post_sj = post_sj;
         this.post_cn = post_cn;
         this.regstr_id = UUID.randomUUID().toString();
@@ -68,35 +56,26 @@ public class Post {
         this.postTags = postTagList;
     }
 
-    public void updatePost(String post_sj, String post_cn){
+    public void updatePost(final String post_sj, final String post_cn) {
         this.post_sj = post_sj;
         this.post_cn = post_cn;
     }
 
     public void addTag(final Tag tag) {
         PostTag postTag = new PostTag(this, tag);
-        postTags.add(postTag);
-        tag.getPostTags().add(postTag);
+        postTags.add(postTag);  // 태그객체를 게시글의 postTags 컬렉션에 추가
+        tag.getPostTags().add(postTag);  //  태그객체를 태그의 postTags 컬렉션에도 추가
     }
 
-    public void removeTag(Tag tag) {
-        PostTag postTagToRemove = null;
-
-        // PostTag 목록에서 제거할 PostTag를 찾음
-        for (PostTag postTag : postTags) {
-            if (postTag.getTag().equals(tag)) {
-                postTagToRemove = postTag;
-                break;
-            }
-        }
-
-        // 찾은 PostTag가 있으면 제거
-        if (postTagToRemove != null) {
-            postTags.remove(postTagToRemove);
-            tag.getPostTags().remove(postTagToRemove);
-            postTagToRemove.remove_Post();
-            postTagToRemove.remove_Tag();
-        }
+    public void removeTag(final Tag tag) {
+        postTags.stream()
+                .filter(postTag -> postTag.getTag().equals(tag))
+                .findFirst()
+                .ifPresent(postTagToRemove -> {
+                    postTags.remove(postTagToRemove);
+                    postTagToRemove.remove_Post();
+                    postTagToRemove.remove_Tag();
+                });
     }
 
 }

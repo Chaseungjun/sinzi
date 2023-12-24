@@ -1,25 +1,19 @@
 package com.example.sinzi_assignment.post.repository;
 
 import com.example.sinzi_assignment.post.dto.PostDto;
-import com.example.sinzi_assignment.post.dto.QPostDto_PostResponseDto;
-import com.example.sinzi_assignment.post.entity.PostId;
-import com.example.sinzi_assignment.post.entity.QPost;
-import com.example.sinzi_assignment.postTag.entity.QPostTag;
+import com.example.sinzi_assignment.post.entity.Post;
+import com.example.sinzi_assignment.tag.entity.QTag;
 import com.querydsl.core.types.Projections;
-import com.querydsl.core.types.dsl.Expressions;
-import com.querydsl.core.types.dsl.StringExpression;
-import com.querydsl.core.types.dsl.StringPath;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import jakarta.persistence.EntityManager;
-import com.querydsl.core.types.dsl.*;
 
 import java.util.List;
 import java.util.Optional;
 
 import static com.example.sinzi_assignment.post.entity.QPost.post;
 import static com.example.sinzi_assignment.postTag.entity.QPostTag.postTag;
+import static com.querydsl.core.group.GroupBy.groupBy;
 import static com.querydsl.core.group.GroupBy.list;
-
 
 public class PostCustomRepositoryImpl implements PostCustomRepository {
 
@@ -31,35 +25,53 @@ public class PostCustomRepositoryImpl implements PostCustomRepository {
 
     @Override
     public List<PostDto.PostResponseDto> findAllPostByBoard_cd(String boardCd) {
-        return queryFactory.select(
-                        new QPostDto_PostResponseDto(
+        return queryFactory
+                .selectFrom(post)
+                .leftJoin(post.postTags, postTag)
+                .leftJoin(postTag.tag, QTag.tag1)
+                .where(post.board_cd.eq(boardCd))
+                .distinct()
+                .transform(groupBy(post.post_no).list(
+                        Projections.constructor(
+                                PostDto.PostResponseDto.class,
                                 post.post_sj,
                                 post.post_cn,
                                 post.board_cd,
                                 post.regstr_id,
                                 post.reg_dt,
-                                list(postTag.tag.tag)
+                                Projections.list(postTag.tag.tag)
                         )
-                ).from(post)
-                .leftJoin(post.postTags, postTag).fetchJoin()
-                .where(post.board_cd.eq(boardCd))
-                .fetch();
+                ));
     }
 
     @Override
-    public Optional<PostDto.PostResponseDto> getPostByPostId(PostId postId) {
-        PostDto.PostResponseDto result = queryFactory.select(
-                        new QPostDto_PostResponseDto(
+    public List<PostDto.PostResponseDto> getPostDtoByBoardCdAndPostNo(String boardCd, Long postNo) {
+        return queryFactory
+                .selectFrom(post)
+                .leftJoin(post.postTags, postTag)
+                .leftJoin(postTag.tag, QTag.tag1)
+                .where(post.board_cd.eq(boardCd).and(post.post_no.eq(postNo)))
+                .distinct()
+                .transform(groupBy(post.post_no).list(
+                        Projections.constructor(
+                                PostDto.PostResponseDto.class,
                                 post.post_sj,
                                 post.post_cn,
                                 post.board_cd,
                                 post.regstr_id,
                                 post.reg_dt,
-                                list(postTag.tag.tag)
-
+                                Projections.list(postTag.tag.tag)
                         )
-                ).from(post)
-                .where(post.post_no.eq(postId.getPost_no()).and(post.board_cd.eq(postId.getBoard_cd())))
+                ));
+
+
+    }
+
+    @Override
+    public Optional<Post> getPostByBoardCdAndPostNo(String boardCd, Long postNo) {
+        Post result = queryFactory.selectFrom(post)
+                .leftJoin(post.postTags, postTag).fetchJoin()
+                .where(post.post_no.eq(postNo).and(post.board_cd.eq(boardCd)))
                 .fetchOne();
 
         return Optional.ofNullable(result);

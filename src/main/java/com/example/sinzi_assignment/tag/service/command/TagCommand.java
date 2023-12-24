@@ -15,5 +15,9 @@ public class TagCommand {
         tagRepository.save(tag);
     }
 
+    public void delete(final Tag tag){
+        tagRepository.delete(tag);
+    }
+
 
 }
